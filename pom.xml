@@ -55,7 +55,7 @@
             <configuration>
                 <archive>
                     <manifest>
-                        <mainClass>Server</mainClass>
+                        <mainClass>com.simedge.broker.Sever.Server</mainClass>
                     </manifest>
                 </archive>
             </configuration>
