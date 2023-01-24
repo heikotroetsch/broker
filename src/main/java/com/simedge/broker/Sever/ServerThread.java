@@ -81,6 +81,9 @@ public class ServerThread extends Thread {
             case MessageTypes.SET_PING:
                 MessageTypes.process_SET_PING(this, content);
                 break;
+            case MessageTypes.CHECK_MODEL:
+                MessageTypes.process_CHECK_MODEL(this, content);
+                break;
 
             case MessageTypes.BYE:
                 System.out.println("its a bye message from: " + this.id);

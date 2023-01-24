@@ -1,5 +1,8 @@
 package com.simedge.protocols;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import com.simedge.broker.Sever.Server;
 import com.simedge.broker.Sever.ServerThread;
 import com.simedge.scheduling.Scheduler;
@@ -12,6 +15,7 @@ public class MessageTypes {
     public static final int GET_RESOURCE = 3;
     public static final int RETURN_RESOURCE = 4;
     public static final int SET_PING = 5;
+    public static final int CHECK_MODEL = 6;
 
     public static void process_HELLO(ServerThread source, String content) {
 
@@ -53,6 +57,26 @@ public class MessageTypes {
                     .add("0No resource with id " + content + " found" + System.getProperty("line.separator"));
         } else {
             resource.incrementResources();
+        }
+
+    }
+
+    public static void process_CHECK_MODEL(ServerThread source, String content) {
+        String hash = content.split(";")[0];
+
+        if (Server.modelCache.containsKey(ByteBuffer.wrap(Server.hexToBytes(hash)))) {
+            System.out.println("Model Found " + hash);
+            source.messageQueue.add(CHECK_MODEL + hash + ";" + 1 + ";" + System.getProperty("line.separator"));
+        } else {
+            System.out.println("Model Not Found " + hash + " not equal");
+            source.messageQueue.add(CHECK_MODEL + hash + ";" + 0 + ";" + System.getProperty("line.separator"));
+
+        }
+
+        System.out.println(Arrays.toString(Server.hexToBytes(hash)));
+        System.out.println(Server.modelCache.size());
+        for (ByteBuffer key : Server.modelCache.keySet()) {
+            System.out.println(Arrays.toString(key.array()));
         }
     }
 
