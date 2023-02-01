@@ -3,41 +3,21 @@ package com.simedge.broker.Sever;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.io.FileUtils;
 
 public class Server {
 
     private static int PORT = 12345;
     public static ConcurrentHashMap<String, ServerThread> connections = new ConcurrentHashMap<String, ServerThread>();
-    public static ConcurrentHashMap<ByteBuffer, byte[]> modelCache = new ConcurrentHashMap<ByteBuffer, byte[]>();
+    public static ConcurrentHashMap<ByteBuffer, LinkedHashSet<String>> modelCache = new ConcurrentHashMap<ByteBuffer, LinkedHashSet<String>>();
 
     public static void main(String[] args) {
         // Filling model Cache
-        try {
-            System.out.println("Writing cache files to memory");
-            fillModelCache();
-        } catch (IOException e) {
-            System.err.println("File problems during loading files from disk into cache");
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println("No Such hashing alogrithm");
-        }
-
-        // Adding shutdown hook which saves models to files when exiting
-        Thread SystemExitHook = new Thread(() -> {
-            System.out.println("Shutting down and saving cache to disk");
-            try {
-                saveModelChacheToDisk();
-            } catch (IOException e) {
-                System.err.println("File problems during cache save to disk");
-            }
-        });
-        Runtime.getRuntime().addShutdownHook(SystemExitHook);
+        System.out.println("Writing file names to memory");
+        fillModelCache();
 
         // Start server
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -57,22 +37,13 @@ public class Server {
         }
     }
 
-    private static void fillModelCache() throws IOException, NoSuchAlgorithmException {
+    public static void fillModelCache() {
         File[] models = new File("modelCache/").listFiles();
         System.out.println(Arrays.toString(models));
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
         for (File file : models) {
-            byte[] fileBytes = FileUtils.readFileToByteArray(file);
-            System.out.println(bytesToHex(md.digest(fileBytes)));
-            modelCache.put(ByteBuffer.wrap(md.digest(fileBytes)), fileBytes);
+            System.out.println(file.getName());
+            modelCache.putIfAbsent(ByteBuffer.wrap(hexToBytes(file.getName())), new LinkedHashSet<String>());
         }
-    }
-
-    private static void saveModelChacheToDisk() throws IOException {
-        for (var file : modelCache.entrySet()) {
-            Files.write(Path.of("modelCache/", bytesToHex(file.getKey().array())), file.getValue());
-        }
-
     }
 
     public static String bytesToHex(byte[] bytes) {

@@ -1,8 +1,6 @@
 package com.simedge.protocols;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import com.simedge.broker.Sever.Server;
 import com.simedge.broker.Sever.ServerThread;
 import com.simedge.scheduling.Scheduler;
@@ -16,6 +14,9 @@ public class MessageTypes {
     public static final int RETURN_RESOURCE = 4;
     public static final int SET_PING = 5;
     public static final int CHECK_MODEL = 6;
+    public static final int MODEL_CACHED = 7;
+    public static final int MODEL_EXPIRED = 8;
+    public static final int LOAD_MODEL = 9;
 
     public static void process_HELLO(ServerThread source, String content) {
 
@@ -24,6 +25,14 @@ public class MessageTypes {
             source.setResources(Integer.parseInt(content.split(";")[1]));
             Server.connections.put(source.getIDString(), source);
             System.out.println(Server.connections.toString());
+
+            // get and add ping array
+            String[] array = content.split(";");
+            int[] pings = new int[array.length - 2];
+            for (int i = 2; i < array.length; i++) {
+                pings[i - 2] = Integer.parseInt(array[i]);
+            }
+            Scheduler.addClient(source.getIDString(), pings);
             source.messageQueue.add("1Added " + source.getIDString() + System.getProperty("line.separator"));
         } catch (Exception e) {
             source.messageQueue.add("0Failed to read message. Either message content empty or resources missing."
@@ -62,26 +71,43 @@ public class MessageTypes {
     }
 
     public static void process_CHECK_MODEL(ServerThread source, String content) {
+        Server.fillModelCache();
         String hash = content.split(";")[0];
 
         if (Server.modelCache.containsKey(ByteBuffer.wrap(Server.hexToBytes(hash)))) {
             System.out.println("Model Found " + hash);
+            Server.modelCache.get(ByteBuffer.wrap(Server.hexToBytes(hash))).add(source.getIDString());
             source.messageQueue.add(CHECK_MODEL + hash + ";" + 1 + ";" + System.getProperty("line.separator"));
         } else {
             System.out.println("Model Not Found " + hash + " not equal");
             source.messageQueue.add(CHECK_MODEL + hash + ";" + 0 + ";" + System.getProperty("line.separator"));
-
         }
 
-        System.out.println(Arrays.toString(Server.hexToBytes(hash)));
-        System.out.println(Server.modelCache.size());
-        for (ByteBuffer key : Server.modelCache.keySet()) {
-            System.out.println(Arrays.toString(key.array()));
-        }
+    }
+
+    public static void process_MODEL_CACHED(ServerThread source, String content) {
+        Server.fillModelCache();
+        String hash = content.split(";")[0];
+
+        Server.modelCache.get(ByteBuffer.wrap(Server.hexToBytes(hash))).add(source.getIDString());
+
+    }
+
+    public static void process_MODEL_EXPIRED(ServerThread source, String content) {
+        Server.fillModelCache();
+        String hash = content.split(";")[0];
+
+        Server.modelCache.get(ByteBuffer.wrap(Server.hexToBytes(hash))).remove(source.getIDString());
+
     }
 
     public static void process_SET_PING(ServerThread source, String content) {
         // TODO
+    }
+
+    public static void LOAD_MODEL(ServerThread source, byte[] modelHash) {
+        source.messageQueue
+                .add(MODEL_EXPIRED + Server.bytesToHex(modelHash) + ";" + System.getProperty("line.separator"));
     }
 
 }

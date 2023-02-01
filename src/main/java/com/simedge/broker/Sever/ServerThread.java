@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import com.simedge.protocols.MessageTypes;
+import com.simedge.scheduling.Scheduler;
 
 public class ServerThread extends Thread {
     private Socket socket;
@@ -85,6 +86,14 @@ public class ServerThread extends Thread {
                 MessageTypes.process_CHECK_MODEL(this, content);
                 break;
 
+            case MessageTypes.MODEL_CACHED:
+                MessageTypes.process_MODEL_CACHED(this, content);
+                break;
+
+            case MessageTypes.MODEL_EXPIRED:
+                MessageTypes.process_MODEL_EXPIRED(this, content);
+                break;
+
             case MessageTypes.BYE:
                 System.out.println("its a bye message from: " + this.id);
                 shutdown();
@@ -96,7 +105,13 @@ public class ServerThread extends Thread {
     void shutdown() {
         System.out.println(Server.connections.toString());
         Server.connections.remove(id);
+        Scheduler.removeClient(id);
         System.out.println(Server.connections.toString());
+
+        // removes resource from each model in the cache list
+        for (var model : Server.modelCache.values()) {
+            model.remove(id);
+        }
 
         this.stop = true;
     }
