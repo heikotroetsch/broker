@@ -3,21 +3,60 @@ package com.simedge.scheduling;
 import com.simedge.broker.Sever.Server;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map.Entry;
+
 import org.ejml.simple.SimpleMatrix;
 
 public class Scheduler {
-
+    public static final int landmarkPingNodes = 39;
     private static LinkedList<String> clientOrderDistanceMatrix = new LinkedList<String>();
     private static double[][] distanceMatrix = importLatencyMatrix();
     private static final Object lock = new Object();
     private static SimpleMatrix factorization;
+    // TODO add and remove resources in recouceassigment matrix
+    private static int[][] resourceAssignment;
 
     public static String scheduleResource(String sourceID) {
+
+        /*
+         * 1. Get Resource message from peer
+         * 2. This method is invoked
+         * 3. Get submatrix from factorization and sort by fastest.
+         * 4. Check if fastest has resources left, if not move to next.
+         * 5. If no resources add to resource queue.
+         * 6. When new resource joins assign to client waiting in queue.
+         * 
+         * begfinning code:
+         * 
+         * 
+         * var iterator = factorization.iterator(true,
+         * clientOrderDistanceMatrix.indexOf(sourceID), landmarkPingNodes,
+         * clientOrderDistanceMatrix.indexOf(sourceID), factorization.numCols());
+         * var resources = new ArrayList<Entry<Integer, Double>>();
+         * int index = 0;
+         * while (iterator.hasNext()) {
+         * resources.add(new SimpleEntry<Integer, Double>(index, iterator.next()));
+         * }
+         * Collections.sort(resources, new Comparator<Entry<Integer, Double>>() {
+         * 
+         * @Override
+         * public int compare(Entry<Integer, Double> o1, Entry<Integer, Double> o2) {
+         * return o1.getValue().compareTo(o2.getValue());
+         * }
+         * });
+         * 
+         */
 
         for (String key : Server.connections.keySet()) {
             if (sourceID != key && Server.connections.get(key).hasResources()) {
@@ -25,7 +64,8 @@ public class Scheduler {
             }
         }
 
-        return sourceID;
+        // return empty String if no resource other than its own is availible
+        return null;
     }
 
     public static String scheduleResource() {
