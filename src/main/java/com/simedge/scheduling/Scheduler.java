@@ -62,7 +62,8 @@ public class Scheduler {
 
         for (String key : Server.connections.keySet()) {
             if (sourceID != key && Server.connections.get(key).hasResources()) {
-                Server.connections.get(sourceID).messageQueue.add(MessageTypes.GET_RESOURCE + key + System.getProperty("line.separator"))
+                Server.connections.get(sourceID).messageQueue
+                        .add(MessageTypes.GET_RESOURCE + key + System.getProperty("line.separator"));
             }
         }
 
