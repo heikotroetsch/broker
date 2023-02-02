@@ -1,6 +1,8 @@
 package com.simedge.scheduling;
 
 import com.simedge.broker.Sever.Server;
+import com.simedge.protocols.MessageTypes;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.AbstractMap;
@@ -27,7 +29,7 @@ public class Scheduler {
     // TODO add and remove resources in recouceassigment matrix
     private static int[][] resourceAssignment;
 
-    public static String scheduleResource(String sourceID) {
+    public static void scheduleResource(String sourceID) {
 
         /*
          * 1. Get Resource message from peer
@@ -60,12 +62,11 @@ public class Scheduler {
 
         for (String key : Server.connections.keySet()) {
             if (sourceID != key && Server.connections.get(key).hasResources()) {
-                return key;
+                Server.connections.get(sourceID).messageQueue.add(MessageTypes.GET_RESOURCE + key + System.getProperty("line.separator"))
             }
         }
 
         // return empty String if no resource other than its own is availible
-        return null;
     }
 
     public static String scheduleResource() {

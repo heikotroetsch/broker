@@ -43,16 +43,20 @@ public class MessageTypes {
     }
 
     public static void process_GET_RESOURCE(ServerThread source, String content) {
-        String resourceID = Scheduler.scheduleResource(source.getIDString());
+        Scheduler.scheduleResource(source.getIDString());
 
-        if (resourceID == null || Server.connections.get(resourceID) == null) {
-            source.messageQueue.add("0no resources availible" + System.getProperty("line.separator"));
-        } else {
-            Server.connections.get(resourceID).decrementResources();
-            String resourceReturnMessage = GET_RESOURCE + resourceID;
-
-            source.messageQueue.add(resourceReturnMessage + System.getProperty("line.separator"));
-        }
+        /*
+         * if (resourceID == null || Server.connections.get(resourceID) == null) {
+         * source.messageQueue.add("0no resources availible" +
+         * System.getProperty("line.separator"));
+         * } else {
+         * Server.connections.get(resourceID).decrementResources();
+         * String resourceReturnMessage = GET_RESOURCE + resourceID;
+         * 
+         * source.messageQueue.add(resourceReturnMessage +
+         * System.getProperty("line.separator"));
+         * }
+         */
 
     }
 
