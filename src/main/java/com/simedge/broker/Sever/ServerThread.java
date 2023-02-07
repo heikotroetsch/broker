@@ -20,48 +20,79 @@ public class ServerThread extends Thread {
 
     // default run for thread
     public void run() {
-        try {
-            InputStream input = socket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-            OutputStream output = socket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
+        // thread for reading from socket
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InputStream input = socket.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-            do {
-                if (stop) {
-                    break;
-                }
-                // reads message type and content. Content is nu ll if empty.
-                int messageType = reader.read() - 48; // 48 is the char number for 0
-                // detect disconnect event
-                if (messageType == (-49)) {
+                    do {
+                        if (stop) {
+                            break;
+                        }
+                        // reads message type and content. Content is nu ll if empty.
+                        int messageType = reader.read() - 48; // 48 is the char number for 0
+                        // detect disconnect event
+                        if (messageType == (-49)) {
+                            shutdown();
+                        }
+                        System.out.println(messageType);
+
+                        String content = reader.readLine();
+                        System.out.println("message type: " + messageType + " content: " + content);
+                        // handle message
+                        handleMessage(messageType, content);
+
+                    } while (!stop);
+
+                    socket.close();
+                } catch (IOException e) {
+                    System.out.println("Server exception: " + e.getMessage());
+                    shutdown();
+                } catch (NullPointerException e) {
+                    System.out.println("Server exception: " + e.getMessage());
                     shutdown();
                 }
-                System.out.println(messageType);
+            }
+        }).start();
 
-                String content = reader.readLine();
-                System.out.println("message type: " + messageType + " content: " + content);
-                // handle message
-                handleMessage(messageType, content);
+        // thread for writing to socket
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    OutputStream output = socket.getOutputStream();
+                    PrintWriter writer = new PrintWriter(output, true);
 
-                // if write queue is filled write message
-                if (!messageQueue.isEmpty()) {
-                    System.out.println("message in queue");
-                    String message = messageQueue.poll();
-                    writer.write(message);
-                    writer.flush();
-                    System.out.println("message sent: " + message);
+                    do {
+                        if (stop) {
+                            break;
+                        }
+                        // if write queue is filled write message
+                        if (!messageQueue.isEmpty()) {
+                            System.out.println("message in queue for: " + id);
+                            String message = messageQueue.poll();
+                            writer.write(message);
+                            writer.flush();
+                            System.out.println("message sent: " + message);
+                        }
+
+                    } while (!stop);
+
+                    socket.close();
+                } catch (IOException e) {
+                    System.out.println("Server exception: " + e.getMessage());
+                    shutdown();
+                } catch (NullPointerException e) {
+                    System.out.println("Server exception: " + e.getMessage());
+                    shutdown();
                 }
+            }
+        }).start();
 
-            } while (!stop);
-
-            socket.close();
-        } catch (IOException e) {
-            System.out.println("Server exception: " + e.getMessage());
-            shutdown();
-        } catch (NullPointerException e) {
-            shutdown();
-        }
     }
 
     void handleMessage(int messageType, String content) {

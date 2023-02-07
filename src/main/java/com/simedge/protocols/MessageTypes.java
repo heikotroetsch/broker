@@ -32,9 +32,17 @@ public class MessageTypes {
             for (int i = 2; i < array.length; i++) {
                 pings[i - 2] = Integer.parseInt(array[i]);
             }
-            Scheduler.addClient(source.getIDString(), pings);
             source.messageQueue.add("1Added " + source.getIDString() + System.getProperty("line.separator"));
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Scheduler.addClient(source.getIDString(), pings);
+                }
+            }).start();
+
         } catch (Exception e) {
+            e.printStackTrace();
             source.messageQueue.add("0Failed to read message. Either message content empty or resources missing."
                     + System.getProperty("line.separator"));
             System.out.print("Failed to read Hello message. Either message content empty or resources missing.");
@@ -43,7 +51,8 @@ public class MessageTypes {
     }
 
     public static void process_GET_RESOURCE(ServerThread source, String content) {
-        Scheduler.scheduleResource(source.getIDString());
+        content = content.split(";")[0];
+        Scheduler.scheduleResource(source.getIDString(), Integer.parseInt(content));
 
         /*
          * if (resourceID == null || Server.connections.get(resourceID) == null) {
@@ -61,7 +70,7 @@ public class MessageTypes {
     }
 
     public static void process_RETURN_RESOURCE(ServerThread source, String content) {
-
+        content = content.split(";")[0];
         ServerThread resource = Server.connections.get(content);
 
         if (resource == null) {
@@ -70,6 +79,8 @@ public class MessageTypes {
                     .add("0No resource with id " + content + " found" + System.getProperty("line.separator"));
         } else {
             resource.incrementResources();
+            Scheduler.returnResource(source.getIDString(), content);
+
         }
 
     }

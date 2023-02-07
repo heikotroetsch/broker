@@ -5,82 +5,109 @@ import com.simedge.protocols.MessageTypes;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.ejml.simple.SimpleMatrix;
 
 public class Scheduler {
-    public static final int landmarkPingNodes = 39;
+    private static final int landmarkPingNodes = 39;
     private static LinkedList<String> clientOrderDistanceMatrix = new LinkedList<String>();
     private static double[][] distanceMatrix = importLatencyMatrix();
     private static final Object lock = new Object();
     private static SimpleMatrix factorization;
-    // TODO add and remove resources in recouceassigment matrix
-    private static int[][] resourceAssignment;
+    private static ConcurrentLinkedDeque<Entry<String, Integer>> resourceQue = new ConcurrentLinkedDeque<Entry<String, Integer>>();
+    private static ConcurrentHashMap<String, ArrayList<String>> resourceAssignment = new ConcurrentHashMap<String, ArrayList<String>>();
 
-    public static void scheduleResource(String sourceID) {
+    public static void scheduleResource(String sourceID, int requestedNumberResources) {
+        synchronized (lock) {
 
-        /*
-         * 1. Get Resource message from peer
-         * 2. This method is invoked
-         * 3. Get submatrix from factorization and sort by fastest.
-         * 4. Check if fastest has resources left, if not move to next.
-         * 5. If no resources add to resource queue.
-         * 6. When new resource joins assign to client waiting in queue.
-         * 
-         * begfinning code:
-         * 
-         * 
-         * var iterator = factorization.iterator(true,
-         * clientOrderDistanceMatrix.indexOf(sourceID), landmarkPingNodes,
-         * clientOrderDistanceMatrix.indexOf(sourceID), factorization.numCols());
-         * var resources = new ArrayList<Entry<Integer, Double>>();
-         * int index = 0;
-         * while (iterator.hasNext()) {
-         * resources.add(new SimpleEntry<Integer, Double>(index, iterator.next()));
-         * }
-         * Collections.sort(resources, new Comparator<Entry<Integer, Double>>() {
-         * 
-         * @Override
-         * public int compare(Entry<Integer, Double> o1, Entry<Integer, Double> o2) {
-         * return o1.getValue().compareTo(o2.getValue());
-         * }
-         * });
-         * 
-         */
-
-        for (String key : Server.connections.keySet()) {
-            if (sourceID != key && Server.connections.get(key).hasResources()) {
-                Server.connections.get(sourceID).messageQueue
-                        .add(MessageTypes.GET_RESOURCE + key + System.getProperty("line.separator"));
+            int indexOfSource = clientOrderDistanceMatrix.indexOf(sourceID);
+            var iterator = factorization.iterator(true,
+                    indexOfSource, landmarkPingNodes,
+                    indexOfSource, factorization.numCols() - 1);
+            var resources = new ArrayList<Entry<Integer, Double>>();
+            int index = landmarkPingNodes;
+            while (iterator.hasNext()) {
+                if (index != indexOfSource) {
+                    resources.add(new SimpleEntry<Integer, Double>(index, iterator.next()));
+                } else {
+                    iterator.next();
+                }
+                index++;
             }
+            Collections.sort(resources, new Comparator<Entry<Integer, Double>>() {
+
+                @Override
+                public int compare(Entry<Integer, Double> o1, Entry<Integer, Double> o2) {
+                    return o1.getValue().compareTo(o2.getValue());
+                }
+            });
+
+            System.out.println("Availible Resources: " + resources.toString());
+
+            for (Entry<Integer, Double> entry : resources) {
+
+                if (Server.connections.get(clientOrderDistanceMatrix.get(entry.getKey())).hasResources()
+                        && requestedNumberResources > 0) {
+                    if (resourceAssignment.get(sourceID) == null) {
+                        // if nothing has been assigned yet, initialize arraylist in resource
+                        // assignement
+                        resourceAssignment.put(sourceID, new ArrayList<String>());
+                    }
+
+                    if (!resourceAssignment.get(sourceID)
+                            .contains(clientOrderDistanceMatrix.get(entry.getKey()))) {
+                        // if resource has not been assigned to this peer than assign it
+
+                        requestedNumberResources--;
+                        Server.connections.get(sourceID).messageQueue
+                                .add(MessageTypes.GET_RESOURCE + clientOrderDistanceMatrix.get(entry.getKey()) + ";"
+                                        + entry.getValue() + System.getProperty("line.separator"));
+
+                        System.out.println("Message Queue" + Server.connections.get(sourceID).messageQueue);
+
+                        Server.connections.get(clientOrderDistanceMatrix.get(entry.getKey())).decrementResources();
+                        resourceAssignment.get(sourceID).add(clientOrderDistanceMatrix.get(entry.getKey()));
+                    }
+
+                }
+
+            }
+
+            if (requestedNumberResources > 0) {
+                resourceQue.add(new SimpleEntry<String, Integer>(sourceID, requestedNumberResources));
+            }
+
+            /*
+             * 1. Get Resource message from peer
+             * 2. This method is invoked
+             * 3. Get submatrix from factorization and sort by fastest.
+             * 4. Check if fastest has resources left, if not move to next.
+             * 5. If no resources add to resource queue.
+             * 6. When new resource joins assign to client waiting in queue.
+             * 
+             * 
+             */
         }
 
-        // return empty String if no resource other than its own is availible
     }
 
-    public static String scheduleResource() {
-        var avail = Server.connections.keySet();
-        int random = (int) (Math.random() * avail.size());
-        int i = 0;
-        for (String key : Server.connections.keySet()) {
-            if (random == i) {
-                return key;
-            }
-            i++;
-        }
-        return Server.connections.keys().nextElement();
+    public static void returnResource(String source, String resourceHash) {
+        // schedule returned resource
+        var resource = resourceQue.remove();
+        scheduleResource(resource.getKey(), resource.getValue());
+        // remove previously assigned at last to prevent rescheduling same resource
+        resourceAssignment.get(source).remove(resourceHash);
     }
 
     public static boolean removeClient(String hash) {
@@ -108,6 +135,15 @@ public class Scheduler {
 
                 distanceMatrix = temp;
                 clientOrderDistanceMatrix.remove(ignoreIndex);
+                resourceAssignment.remove(hash);
+                for (var list : resourceAssignment.values()) {
+                    list.remove(hash);
+                }
+                for (var entry : resourceQue) {
+                    if (entry.getKey().equals(hash)) {
+                        resourceQue.remove(entry);
+                    }
+                }
                 factorization = NMF();
                 return true;
             } else {
@@ -133,7 +169,13 @@ public class Scheduler {
             }
             distanceMatrix = temp;
             factorization = NMF();
+
         }
+        if (!resourceQue.isEmpty()) {
+            var resourceRequired = resourceQue.remove();
+            scheduleResource(resourceRequired.getKey(), resourceRequired.getValue());
+        }
+
     }
 
     public static double[][] importLatencyMatrix() {
@@ -168,7 +210,7 @@ public class Scheduler {
         return matrix;
     }
 
-    public static void printMatrix(int[][] matrix) {
+    public static void printMatrix(double[][] matrix) {
         for (int row = 0; row < matrix.length; row++) {
             System.out.print(clientOrderDistanceMatrix.get(row) + "\t");
             for (int col = 0; col < matrix[row].length; col++) {
