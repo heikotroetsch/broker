@@ -71,18 +71,20 @@ public class MessageTypes {
 
     public static void process_RETURN_RESOURCE(ServerThread source, String content) {
         System.out.println("Full RETURN_RESOURCE Message: " + content);
-        content = content.split(";")[0];
-        System.out.println("Resource Returned " + content);
-        double rtt = Double.parseDouble(content.split(";")[1]);
-        ServerThread resource = Server.connections.get(content);
+        var splitMesage = content.split(";");
+        String resourceString = splitMesage[0];
+        String rttString = splitMesage[1];
+        System.out.println("Resource Returned " + resourceString);
+        double rtt = Double.parseDouble(rttString);
+        ServerThread resource = Server.connections.get(resourceString);
 
         if (resource == null) {
-            System.out.println("0No resource with id " + content + " found");
+            System.out.println("0No resource with id " + resourceString + " found");
             source.messageQueue
-                    .add("0No resource with id " + content + " found" + System.getProperty("line.separator"));
+                    .add("0No resource with id " + resourceString + " found" + System.getProperty("line.separator"));
         } else {
             resource.incrementResources();
-            Scheduler.returnResource(source.getIDString(), content, rtt);
+            Scheduler.returnResource(source.getIDString(), resourceString, rtt);
 
         }
 
