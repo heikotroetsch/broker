@@ -125,4 +125,9 @@ public class MessageTypes {
                 .add(MODEL_EXPIRED + Server.bytesToHex(modelHash) + ";" + System.getProperty("line.separator"));
     }
 
+    public static void RETURN_RESOURCE(ServerThread source, String hash) {
+        // tells client resource is no longer online
+        source.messageQueue.add(RETURN_RESOURCE + hash + System.getProperty("line.separator"));
+    }
+
 }

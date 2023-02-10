@@ -136,8 +136,10 @@ public class Scheduler {
                 distanceMatrix = temp;
                 clientOrderDistanceMatrix.remove(ignoreIndex);
                 resourceAssignment.remove(hash);
-                for (var list : resourceAssignment.values()) {
-                    list.remove(hash);
+                for (var entry : resourceAssignment.entrySet()) {
+                    if (entry.getValue().remove(hash)) {
+                        MessageTypes.RETURN_RESOURCE(Server.connections.get(entry.getKey()), hash);
+                    }
                 }
                 for (var entry : resourceQue) {
                     if (entry.getKey().equals(hash)) {
