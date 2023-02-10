@@ -71,6 +71,7 @@ public class MessageTypes {
 
     public static void process_RETURN_RESOURCE(ServerThread source, String content) {
         content = content.split(";")[0];
+        System.out.println("Resource Returned " + content);
         double rtt = Double.parseDouble(content.split(";")[1]);
         ServerThread resource = Server.connections.get(content);
 
