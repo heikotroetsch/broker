@@ -71,6 +71,7 @@ public class MessageTypes {
 
     public static void process_RETURN_RESOURCE(ServerThread source, String content) {
         content = content.split(";")[0];
+        double rtt = Double.parseDouble(content.split(";")[1]);
         ServerThread resource = Server.connections.get(content);
 
         if (resource == null) {
@@ -79,7 +80,7 @@ public class MessageTypes {
                     .add("0No resource with id " + content + " found" + System.getProperty("line.separator"));
         } else {
             resource.incrementResources();
-            Scheduler.returnResource(source.getIDString(), content);
+            Scheduler.returnResource(source.getIDString(), content, rtt);
 
         }
 

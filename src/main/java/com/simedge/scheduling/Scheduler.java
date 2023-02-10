@@ -102,7 +102,12 @@ public class Scheduler {
 
     }
 
-    public static void returnResource(String source, String resourceHash) {
+    public static void returnResource(String source, String resourceHash, double rtt) {
+        // update rtt from source to resource in distance matrix
+        distanceMatrix[clientOrderDistanceMatrix.indexOf(source)][clientOrderDistanceMatrix
+                .indexOf(resourceHash)] = rtt;
+        distanceMatrix[clientOrderDistanceMatrix.indexOf(resourceHash)][clientOrderDistanceMatrix
+                .indexOf(source)] = rtt;
         // schedule returned resource
         var resource = resourceQue.remove();
         scheduleResource(resource.getKey(), resource.getValue());
