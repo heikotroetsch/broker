@@ -8,13 +8,25 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.simedge.logger.Logger;
+
 public class Server {
 
     private static int PORT = 12345;
     public static ConcurrentHashMap<String, ServerThread> connections = new ConcurrentHashMap<String, ServerThread>();
     public static ConcurrentHashMap<ByteBuffer, LinkedHashSet<String>> modelCache = new ConcurrentHashMap<ByteBuffer, LinkedHashSet<String>>();
+    public static Logger logger;
 
     public static void main(String[] args) {
+
+        // Starting logger
+        try {
+            logger = new Logger();
+            logger.start();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         // Filling model Cache
         System.out.println("Writing file names to memory");
         fillModelCache();

@@ -45,6 +45,15 @@ public class Scheduler {
                 }
                 index++;
             }
+
+            // if value has been measured put that in the resource list
+            for (Entry<Integer, Double> entry : resources) {
+                double value;
+                if ((value = distanceMatrix[entry.getKey()][clientOrderDistanceMatrix.indexOf(sourceID)]) != 0) {
+                    entry.setValue(value);
+                }
+            }
+
             Collections.sort(resources, new Comparator<Entry<Integer, Double>>() {
 
                 @Override
@@ -73,6 +82,11 @@ public class Scheduler {
                         Server.connections.get(sourceID).messageQueue
                                 .add(MessageTypes.GET_RESOURCE + clientOrderDistanceMatrix.get(entry.getKey()) + ";"
                                         + entry.getValue() + System.getProperty("line.separator"));
+
+                        Server.logger.toWrite
+                                .add("ScheduledResource" + ";" + sourceID + ";"
+                                        + clientOrderDistanceMatrix.get(entry.getKey()) + ";"
+                                        + entry.getValue());
 
                         System.out.println("Message Queue" + Server.connections.get(sourceID).messageQueue);
 
@@ -103,6 +117,8 @@ public class Scheduler {
     }
 
     public static void returnResource(String source, String resourceHash, double rtt) {
+        Server.logger.toWrite.add("ConsumerToResourceRTTavg" + ";" + source + ";" + resourceHash + ";" + rtt);
+
         // update rtt from source to resource in distance matrix
         distanceMatrix[clientOrderDistanceMatrix.indexOf(source)][clientOrderDistanceMatrix
                 .indexOf(resourceHash)] = rtt;
@@ -161,6 +177,7 @@ public class Scheduler {
     }
 
     public static void addClient(String hash, int[] measurements) {
+        Server.logger.toWrite.add("addClientWithMeasurements" + ";" + hash + ";" + Arrays.toString(measurements));
         synchronized (lock) {
             clientOrderDistanceMatrix.add(hash);
             double[][] temp = new double[distanceMatrix.length + 1][distanceMatrix[0].length + 1];
