@@ -31,6 +31,8 @@ public class Scheduler {
     public static void scheduleResource(String sourceID, int requestedNumberResources) {
         synchronized (lock) {
 
+            Server.logger.toWrite.add(factorization.toString());
+
             int indexOfSource = clientOrderDistanceMatrix.indexOf(sourceID);
             var iterator = factorization.iterator(true,
                     indexOfSource, landmarkPingNodes,
