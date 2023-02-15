@@ -34,6 +34,11 @@ public class Scheduler {
             Server.logger.toWrite.add(factorization.toString());
 
             int indexOfSource = clientOrderDistanceMatrix.indexOf(sourceID);
+            if (indexOfSource == -1) {
+                System.out.println(
+                        "Source has not been fully added to clientOrderDistanceMatrix so returning without scheduling resource.");
+                return;
+            }
             var iterator = factorization.iterator(true,
                     indexOfSource, landmarkPingNodes,
                     indexOfSource, factorization.numCols() - 1);
@@ -179,9 +184,11 @@ public class Scheduler {
     }
 
     public static void addClient(String hash, int[] measurements) {
-        Server.logger.toWrite.add("addClientWithMeasurements" + ";" + hash + ";" + Arrays.toString(measurements));
         synchronized (lock) {
             clientOrderDistanceMatrix.add(hash);
+
+            Server.logger.toWrite.add("addClientWithMeasurements" + ";" + hash + ";" + Arrays.toString(measurements));
+
             double[][] temp = new double[distanceMatrix.length + 1][distanceMatrix[0].length + 1];
             for (int row = 0; row < distanceMatrix.length; row++) {
                 for (int col = 0; col < distanceMatrix[row].length; col++) {
@@ -196,10 +203,11 @@ public class Scheduler {
             distanceMatrix = temp;
             factorization = NMF();
 
-        }
-        if (!resourceQue.isEmpty()) {
-            var resourceRequired = resourceQue.remove();
-            scheduleResource(resourceRequired.getKey(), resourceRequired.getValue());
+            if (!resourceQue.isEmpty()) {
+                var resourceRequired = resourceQue.remove();
+                scheduleResource(resourceRequired.getKey(), resourceRequired.getValue());
+            }
+
         }
 
     }
