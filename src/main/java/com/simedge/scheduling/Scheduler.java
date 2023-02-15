@@ -30,6 +30,7 @@ public class Scheduler {
 
     public static void scheduleResource(String sourceID, int requestedNumberResources) {
         synchronized (lock) {
+            NMF();
 
             Server.logger.toWrite.add(factorization.toString());
 
