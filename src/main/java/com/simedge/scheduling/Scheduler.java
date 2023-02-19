@@ -31,7 +31,16 @@ public class Scheduler {
     public static void scheduleResource(String sourceID, int requestedNumberResources) {
         synchronized (lock) {
 
+            Server.logger.toWrite.add("Client List");
+
+            StringBuffer clientList = new StringBuffer();
+            for (var c : clientOrderDistanceMatrix) {
+                clientList.append(c + ",");
+            }
+            Server.logger.toWrite.add("Factorization matrix");
             Server.logger.toWrite.add(factorization.toString());
+            Server.logger.toWrite.add("sitance matrix");
+            Server.logger.toWrite.add(new SimpleMatrix(distanceMatrix).toString());
 
             int indexOfSource = clientOrderDistanceMatrix.indexOf(sourceID);
             if (indexOfSource == -1) {
