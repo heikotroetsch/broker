@@ -13,6 +13,11 @@ public class ServerThread extends Thread {
     private boolean stop = false;
     public ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<String>();
 
+    /**
+     * Initialize server Thread
+     * 
+     * @param socket
+     */
     public ServerThread(
             Socket socket) {
         this.socket = socket;
@@ -95,6 +100,12 @@ public class ServerThread extends Thread {
 
     }
 
+    /**
+     * Handle message based on message type
+     * 
+     * @param messageType Message type
+     * @param content     Message content
+     */
     void handleMessage(int messageType, String content) {
 
         switch (messageType) {
@@ -133,6 +144,10 @@ public class ServerThread extends Thread {
 
     }
 
+    /**
+     * Shuts down the system by creating persistant model cache and saying bye to
+     * clients
+     */
     void shutdown() {
         System.out.println(Server.connections.toString());
         Server.connections.remove(id);
@@ -147,26 +162,52 @@ public class ServerThread extends Thread {
         this.stop = true;
     }
 
+    /**
+     * Getter for ID String
+     * 
+     * @return
+     */
     public String getIDString() {
         return this.id;
     }
 
+    /**
+     * Setter for ID String
+     * 
+     * @param id
+     */
     public void setIDString(String id) {
         this.id = id;
     }
 
+    /**
+     * Setter for resource number
+     * 
+     * @param i
+     */
     public void setResources(int i) {
         this.resources = i;
     }
 
+    /**
+     * Decrement resources avaulible to thread
+     */
     public void decrementResources() {
         this.resources--;
     }
 
+    /**
+     * Increment resources avaulible to thread
+     */
     public void incrementResources() {
         this.resources++;
     }
 
+    /**
+     * Check if this resouce has resources left
+     * 
+     * @return Returns true if resources are availible
+     */
     public boolean hasResources() {
         return resources > 0;
     }

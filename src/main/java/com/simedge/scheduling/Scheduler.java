@@ -28,6 +28,12 @@ public class Scheduler {
     private static ConcurrentLinkedDeque<Entry<String, Integer>> resourceQue = new ConcurrentLinkedDeque<Entry<String, Integer>>();
     private static ConcurrentHashMap<String, ArrayList<String>> resourceAssignment = new ConcurrentHashMap<String, ArrayList<String>>();
 
+    /**
+     * Schedule a resource when requested
+     * 
+     * @param sourceID                 Source of scheduling request
+     * @param requestedNumberResources Number of resources requested
+     */
     public static void scheduleResource(String sourceID, int requestedNumberResources) {
         synchronized (lock) {
 
@@ -118,20 +124,17 @@ public class Scheduler {
                 resourceQue.add(new SimpleEntry<String, Integer>(sourceID, requestedNumberResources));
             }
 
-            /*
-             * 1. Get Resource message from peer
-             * 2. This method is invoked
-             * 3. Get submatrix from factorization and sort by fastest.
-             * 4. Check if fastest has resources left, if not move to next.
-             * 5. If no resources add to resource queue.
-             * 6. When new resource joins assign to client waiting in queue.
-             * 
-             * 
-             */
         }
 
     }
 
+    /**
+     * Handle consumer returning resource and updating RTT times
+     * 
+     * @param source       Source address of consumer
+     * @param resourceHash Adddress of provider
+     * @param rtt          RTT between consumer and provider
+     */
     public static void returnResource(String source, String resourceHash, double rtt) {
         Server.logger.toWrite.add("ConsumerToResourceRTTavg" + ";" + source + ";" + resourceHash + ";" + rtt);
 
@@ -147,6 +150,13 @@ public class Scheduler {
         resourceAssignment.get(source).remove(resourceHash);
     }
 
+    /**
+     * Remove client from scheudler if leaving the system and initiates latency
+     * predictions
+     * 
+     * @param hash Address that is leaving
+     * @return returns true when finished
+     */
     public static boolean removeClient(String hash) {
         synchronized (lock) {
             int ignoreIndex = clientOrderDistanceMatrix.indexOf(hash);
@@ -192,6 +202,12 @@ public class Scheduler {
 
     }
 
+    /**
+     * Add resource to scheduler and initiate latency prediction
+     * 
+     * @param hash         Address string of resource
+     * @param measurements Ping measurements to azure zones or other reference nodes
+     */
     public static void addClient(String hash, int[] measurements) {
         synchronized (lock) {
             clientOrderDistanceMatrix.add(hash);
@@ -221,6 +237,11 @@ public class Scheduler {
 
     }
 
+    /**
+     * Import distance matrix of reference nodes in this case azures zones from file
+     * 
+     * @return Distance matrix of reference nodes
+     */
     public static double[][] importLatencyMatrix() {
         List<List<String>> records = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader("azure.csv"))) {
@@ -253,6 +274,11 @@ public class Scheduler {
         return matrix;
     }
 
+    /**
+     * Print matrix for debugging and logging
+     * 
+     * @param matrix Matrix to log
+     */
     public static void printMatrix(double[][] matrix) {
         for (int row = 0; row < matrix.length; row++) {
             System.out.print(clientOrderDistanceMatrix.get(row) + "\t");
@@ -264,6 +290,11 @@ public class Scheduler {
         System.out.println();
     }
 
+    /**
+     * Latency prediction algorithm using non-negative matrix factorization
+     * 
+     * @return returns factorization results
+     */
     private static SimpleMatrix NMF() {
 
         SimpleMatrix X = SimpleMatrix.random64(distanceMatrix.length, 64, 0, 4, new Random(5432l)); // Initialize random

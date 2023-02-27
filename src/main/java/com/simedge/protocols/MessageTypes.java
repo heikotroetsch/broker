@@ -18,6 +18,12 @@ public class MessageTypes {
     public static final int MODEL_EXPIRED = 8;
     public static final int LOAD_MODEL = 9;
 
+    /**
+     * Process hello message from consumer
+     * 
+     * @param source  Thread of source
+     * @param content Message content
+     */
     public static void process_HELLO(ServerThread source, String content) {
 
         try {
@@ -50,6 +56,12 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Process resource request from consumer
+     * 
+     * @param source  Server thread of message source
+     * @param content Message content
+     */
     public static void process_GET_RESOURCE(ServerThread source, String content) {
         content = content.split(";")[0];
         Scheduler.scheduleResource(source.getIDString(), Integer.parseInt(content));
@@ -69,6 +81,12 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Process consumer returning resource
+     * 
+     * @param source  Source thread of message
+     * @param content Message content
+     */
     public static void process_RETURN_RESOURCE(ServerThread source, String content) {
         System.out.println("Full RETURN_RESOURCE Message: " + content);
         var splitMesage = content.split(";");
@@ -90,6 +108,12 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Process check model message form consumer
+     * 
+     * @param source  Source thread of message
+     * @param content Message content
+     */
     public static void process_CHECK_MODEL(ServerThread source, String content) {
         Server.fillModelCache();
         String hash = content.split(";")[0];
@@ -105,6 +129,12 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Process finished upload of model from consumer
+     * 
+     * @param source  Source thread of message
+     * @param content Message content
+     */
     public static void process_MODEL_CACHED(ServerThread source, String content) {
         Server.fillModelCache();
         String hash = content.split(";")[0];
@@ -113,6 +143,12 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Process model expired message when consumer evicts model from LRU cache
+     * 
+     * @param source  Source thread of message
+     * @param content Message content
+     */
     public static void process_MODEL_EXPIRED(ServerThread source, String content) {
         Server.fillModelCache();
         String hash = content.split(";")[0];
@@ -121,15 +157,33 @@ public class MessageTypes {
 
     }
 
+    /**
+     * Unimplemented
+     * 
+     * @param source
+     * @param content
+     */
     public static void process_SET_PING(ServerThread source, String content) {
         // TODO
     }
 
+    /**
+     * Tell consumer to load model from repository
+     * 
+     * @param source    Source thread of message
+     * @param modelHahs Hash of model consumer should download
+     */
     public static void LOAD_MODEL(ServerThread source, byte[] modelHash) {
         source.messageQueue
                 .add(MODEL_EXPIRED + Server.bytesToHex(modelHash) + ";" + System.getProperty("line.separator"));
     }
 
+    /**
+     * Assign resource to consumer
+     * 
+     * @param source Thread of consumer
+     * @param hash   Address of assigned resource
+     */
     public static void RETURN_RESOURCE(ServerThread source, String hash) {
         // tells client resource is no longer online
         source.messageQueue.add(RETURN_RESOURCE + hash + System.getProperty("line.separator"));

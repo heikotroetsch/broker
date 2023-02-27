@@ -13,6 +13,11 @@ public class Logger extends Thread {
     private FileWriter fw;
     private PrintWriter pw;
 
+    /**
+     * Initializing logger instance thread
+     * 
+     * @throws IOException
+     */
     public Logger() throws IOException {
         var file = Files.createFile(Paths.get("logs/log_" + getCurrentTimeStamp() + ".csv"));
         fw = new FileWriter(file.toFile());
@@ -35,12 +40,22 @@ public class Logger extends Thread {
         }
     }
 
+    /**
+     * Shutdown thread when system closing
+     * 
+     * @throws IOException
+     */
     public void shutdown() throws IOException {
         pw.flush();
         pw.close();
         fw.close();
     }
 
+    /**
+     * Get timestamp for logging
+     * 
+     * @return Returns string of current time as "yyyy-MM-dd'T'HH_mm_ss"
+     */
     private static String getCurrentTimeStamp() {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH_mm_ss");
         Date now = new Date();
